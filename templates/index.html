@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #232526, #414345);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            color: #fff;
+        }
+        .container {
+            background: rgba(30, 30, 40, 0.95);
+            max-width: 420px;
+            margin: 60px auto 0 auto;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 36px 32px 28px 32px;
+            text-align: center;
+        }
+        h2 {
+            font-weight: 700;
+            font-size: 2.1em;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+            color: #ff5252;
+        }
+        label {
+            display: block;
+            margin: 18px 0 6px 0;
+            font-weight: 500;
+            color: #ffb300;
+            text-align: left;
+        }
+        input[type=text] {
+            width: 100%;
+            padding: 12px 10px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 1em;
+            background: #232526;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        select {
+            width: 100%;
+            padding: 10px 8px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+            background: #232526;
+            color: #fff;
+            margin-bottom: 18px;
+        }
+        button {
+            width: 100%;
+            padding: 13px 0;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #ff5252, #ffb300);
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #ffb300, #ff5252);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .error {
+            color: #ff5252;
+            background: #2d1a1a;
+            border-radius: 6px;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .footer {
+            margin-top: 32px;
+            color: #bbb;
+            font-size: 0.95em;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+        .spinner {
+            border: 6px solid #232526;
+            border-top: 6px solid #ffb300;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 500px) {
+            .container { padding: 18px 6vw; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🎬 YouTube Downloader</h2>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form id="download-form" method="post">
+        <label for="url">YouTube URL</label>
+        <input type="text" id="url" name="url" placeholder="Paste YouTube link here..." required>
+        <label for="mode">Download as</label>
+        <select id="mode" name="mode">
+            <option value="video">Video (mp4)</option>
+            <option value="audio">Audio (mp3)</option>
+        </select>
+        <div id="quality-section" style="display:none;">
+            <label for="quality">Video Quality</label>
+            <select id="quality" name="quality"></select>
+        </div>
+        <button type="submit">Download</button>
+    </form>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div id="loading-text">Processing your download...</div>
+    </div>
+    <div class="footer">
+        <span>Made with <span style="color:#ff5252;">&#10084;</span> using yt-dlp & Flask</span>
+    </div>
+</div>
+<script>
+    const urlInput = document.getElementById('url');
+    const modeSelect = document.getElementById('mode');
+    const qualitySection = document.getElementById('quality-section');
+    const qualitySelect = document.getElementById('quality');
+    const form = document.getElementById('download-form');
+    const loadingDiv = document.getElementById('loading');
+
+    modeSelect.addEventListener('change', function() {
+        if (modeSelect.value === 'video') {
+            qualitySection.style.display = 'block';
+        } else {
+            qualitySection.style.display = 'none';
+        }
+    });
+
+    urlInput.addEventListener('blur', fetchFormats);
+    urlInput.addEventListener('change', fetchFormats);
+
+    function fetchFormats() {
+        if (modeSelect.value !== 'video') return;
+        const url = urlInput.value.trim();
+        if (!url) return;
+        qualitySelect.innerHTML = '<option>Loading...</option>';
+        fetch('/get_formats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        })
+        .then(res => res.json())
+        .then(data => {
+            qualitySelect.innerHTML = '';
+            if (data.formats && data.formats.length) {
+                data.formats.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.format_id;
+                    opt.textContent = f.label;
+                    qualitySelect.appendChild(opt);
+                });
+            } else {
+                qualitySelect.innerHTML = '<option>No formats found</option>';
+            }
+            // Set hidden input for playlist detection
+            let playlistInput = document.getElementById('is_playlist');
+            if (!playlistInput) {
+                playlistInput = document.createElement('input');
+                playlistInput.type = 'hidden';
+                playlistInput.id = 'is_playlist';
+                playlistInput.name = 'is_playlist';
+                form.appendChild(playlistInput);
+            }
+            playlistInput.value = data.is_playlist ? 'true' : 'false';
+        })
+        .catch(() => {
+            qualitySelect.innerHTML = '<option>Error loading formats</option>';
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+        loadingDiv.style.display = 'block';
+        // If progress_id is present, start polling
+        const progressId = document.getElementById('progress_id');
+        if (progressId) {
+            pollProgress(progressId.value);
+        }
+    });
+
+    function pollProgress(progressId) {
+        const loadingText = document.getElementById('loading-text');
+        function check() {
+            fetch(`/progress/${progressId}`)
+                .then(res => res.json())
+                .then(data => {
+                    loadingText.textContent = `Processing your download... ${data.progress}%`;
+                    if (data.progress < 100) {
+                        setTimeout(check, 1000);
+                    } else {
+                        loadingText.textContent = 'Download ready! Reload the page.';
+                        window.location.reload();
+                    }
+                });
+        }
+        check();
+    }
+
+    // Show quality section if video is selected by default
+    if (modeSelect.value === 'video') {
+        qualitySection.style.display = 'block';
+    }
+</script>
+</body>
+</html>

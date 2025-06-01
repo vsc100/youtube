@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Downloading...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #232526, #414345);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            color: #fff;
+        }
+        .container {
+            background: rgba(30, 30, 40, 0.95);
+            max-width: 420px;
+            margin: 60px auto 0 auto;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 36px 32px 28px 32px;
+            text-align: center;
+        }
+        h2 {
+            font-weight: 700;
+            font-size: 2.1em;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+            color: #ff5252;
+        }
+        .spinner {
+            border: 6px solid #232526;
+            border-top: 6px solid #ffb300;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .footer {
+            margin-top: 32px;
+            color: #bbb;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Downloading...</h2>
+    <div class="spinner"></div>
+    <div id="loading-text">Processing your download... 0%</div>
+    <div class="footer">
+        <span>Made with <span style="color:#ff5252;">&#10084;</span> using yt-dlp & Flask</span>
+    </div>
+</div>
+<script>
+    const progressId = "{{ progress_id }}";
+    function pollProgress() {
+        fetch(`/progress/${progressId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('loading-text').textContent = 'Error: ' + data.error;
+                    return;
+                }
+                document.getElementById('loading-text').textContent = `Processing your download... ${data.progress}%`;
+                if (data.progress < 100) {
+                    setTimeout(pollProgress, 1000);
+                } else if (data.playlist_files) {
+                    // Playlist is ready, redirect to playlist ZIP download
+                    window.location.href = `/download/playlist?files=${encodeURIComponent(data.playlist_files)}`;
+                } else if (data.filenames) {
+                    // Single file download
+                    window.location.href = `/downloaded/${data.filenames}`;
+                }
+            });
+    }
+    pollProgress();
+</script>
+</body>
+</html>

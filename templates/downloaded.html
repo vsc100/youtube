@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Download Complete</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #232526, #414345);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            color: #fff;
+        }
+        .container {
+            background: rgba(30, 30, 40, 0.95);
+            max-width: 420px;
+            margin: 60px auto 0 auto;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 36px 32px 28px 32px;
+            text-align: center;
+        }
+        h2 {
+            font-weight: 700;
+            font-size: 2.1em;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+            color: #ff5252;
+        }
+        a#download-link, a#download-zip {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 13px 32px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #ff5252, #ffb300);
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.2s;
+        }
+        a#download-link:hover, a#download-zip:hover {
+            background: linear-gradient(90deg, #ffb300, #ff5252);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .footer {
+            margin-top: 32px;
+            color: #bbb;
+            font-size: 0.95em;
+        }
+        @media (max-width: 500px) {
+            .container { padding: 18px 6vw; }
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            var link = document.getElementById('download-link') || document.getElementById('download-zip');
+            if (link) {
+                // Use setTimeout to ensure the DOM is ready and allow browser to trigger download
+                setTimeout(function() {
+                    link.click();
+                }, 500);
+            }
+        };
+    </script>
+</head>
+<body>
+<div class="container">
+    <h2>🎬 Download Complete!</h2>
+    {% if is_playlist %}
+        <p>Your playlist is ready:</p>
+        <a id="download-zip" href="{{ url_for('download_playlist') }}?files={{ ','.join(filenames) }}" download>Download Playlist (zip)</a>
+        <ul style="margin-top:20px; text-align:left;">
+            {% for f in filenames %}
+                <li>{{ f }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Your file is ready:</p>
+        <a id="download-link" href="{{ url_for('download', filename=filename) }}" download>Download {{ filename }}</a>
+    {% endif %}
+    <br><br>
+    <a href="{{ url_for('index') }}" style="color:#ffb300;">Download another</a>
+    <p style="margin-top:20px; color: #bbb; font-size: 0.95em;">The download should start automatically. If not, click the link above. The file will be saved to your browser's default download folder.</p>
+    <div class="footer">
+        <span>Made with <span style="color:#ff5252;">&#10084;</span> using yt-dlp & Flask</span>
+    </div>
+</div>
+</body>
+</html>
