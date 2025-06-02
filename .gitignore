@@ -1,0 +1,4 @@
+aws.pem
+.venv
+__pycache__
+DEVELOPMENT.md
