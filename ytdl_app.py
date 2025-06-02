@@ -11,6 +11,7 @@ def download_video(url, output_path='downloads/%(title)s.%(ext)s'):
         'format': 'bestvideo+bestaudio/best',
         'merge_output_format': 'mp4',
         'progress_hooks': [download_hook],
+        'cookies': 'www.youtube.com_cookies.txt'
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
